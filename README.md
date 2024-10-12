@@ -53,9 +53,10 @@ func resume(s *discordgo.Session, guildId string) {
 ### Record Voice Channel Audio
 Starts Recording Discord Audio 
 ```go
-func saveAudio(s *discordgo.Session, guildID, channelID) {
+func saveAudio(s *discordgo.Session, guildID, channelID string) {
     saveLocation := "some/path/here/" // path the audio is saved to. each user will have their own file in this dir
     silenceThreshold := 2 * time.Minute // time the user is silent before thier audio is saved
+	discordgoaudio.SaveChannelAudio(s, guildID, silenceThreshold, saveLocation)
 }
 ```
 
