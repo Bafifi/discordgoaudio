@@ -38,6 +38,18 @@ func GetServerAudioState(guildID string) *AudioState {
 	return newState
 }
 
+func ResetAudioState(guildID string) {
+	stateMutex.Lock()
+	defer stateMutex.Unlock()
+
+	if state, exists := serverAudioState[guildID]; exists {
+		state.Player.StopAudioChannel <- true
+		state.Player = createNewAudioPlayer()
+		state.lastPlayed.isPlaying = false
+		state.lastPlayed.shouldCheckDisconnect = false
+	}
+}
+
 // LeaveVoice disconnects from the voice channel in the specified guild.
 func LeaveVoice(s *discordgo.Session, guildID string) error {
 	if vc, exists := s.VoiceConnections[guildID]; exists {
@@ -85,6 +97,16 @@ func runJoinChannel(s *discordgo.Session, audioState *AudioState, guildID, userI
 		}
 		return fmt.Errorf("error joining voice channel after %d tries: %w", tries, err)
 	}
+
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			if voiceConnection == nil || !voiceConnection.Ready {
+				ResetAudioState(guildID)
+				return
+			}
+		}
+	}()
 
 	if err := voiceConnection.Speaking(true); err != nil {
 		if leaveErr := LeaveVoice(s, guildID); leaveErr != nil {
